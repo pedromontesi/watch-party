@@ -1,75 +1,67 @@
-# React + TypeScript + Vite
+Watch Party
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Sistema de watch party online com compartilhamento de tela em tempo real, usando WebRTC para transmissão peer-to-peer e Socket.io para sinalização.
 
-Currently, two official plugins are available:
+Tecnologias
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## React Compiler
+Frontend: React + TypeScript + Vite
+Backend: Node.js + Express + TypeScript
+Tempo real: Socket.io
+Transmissão: WebRTC (getDisplayMedia)
+Roteamento: React Router DOM
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Expanding the ESLint configuration
+Como rodar
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Pré-requisitos
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Node.js 18+
+npm
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 
-```
+1. Instalar dependências
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+bash# Frontend (na raiz)
+npm install
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+# Backend
+cd server && npm install
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2. Rodar o servidor
 
-```
+bashcd server
+npm run dev
+
+O servidor sobe em http://localhost:3001.
+
+3. Rodar o frontend
+
+bash# na raiz do projeto
+npm run dev
+
+O frontend sobe em http://localhost:5173.
+
+
+Mantenha os dois terminais abertos ao mesmo tempo.
+
+
+
+Como usar
+
+Criar uma sala (host)
+
+
+Acesse http://localhost:5173
+Clique em Criar sala
+Você será redirecionado para uma URL com 6 caracteres, ex: http://localhost:5173/xK9mPq
+Clique em Compartilhar tela — o browser vai pedir permissão para capturar a tela
+Compartilhe o link com quem quiser convidar
+
+
+Entrar em uma sala (viewer)
+
+
+Acesse o link compartilhado diretamente, ou
+Na tela inicial, digite o código de 6 caracteres e clique em Entrar
