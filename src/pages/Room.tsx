@@ -29,6 +29,16 @@ export default function Room() {
         videoRef.current.srcObject = e.streams[0]
       }
     }
+    
+    pc.onnegotiationneeded = async () => {
+      try {
+        const offer = await pc.createOffer()
+        await pc.setLocalDescription(offer)
+        socketRef.current?.emit('signal', { to: peerId, signal: offer })
+      } catch (err) {
+        console.error('Erro na renegociação:', err)
+      }
+    }
 
     return pc
   }, [])
@@ -47,28 +57,30 @@ export default function Room() {
       const pc = createPeerConnection(viewerId)
       peersRef.current[viewerId] = pc
 
-      // Se já tem stream, adiciona as tracks na nova conexão
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => pc.addTrack(track, streamRef.current!))
+        streamRef.current.getTracks().forEach(track =>
+          pc.addTrack(track, streamRef.current!)
+        )
       }
 
-      const offer = await pc.createOffer()
-      await pc.setLocalDescription(offer)
-      socket.emit('signal', { to: viewerId, signal: offer })
     })
 
     socket.on('signal', async ({ from, signal }: { from: string; signal: RTCSessionDescriptionInit & RTCIceCandidateInit }) => {
+      let pc = peersRef.current[from]
+
       if (signal.type === 'offer') {
-        const pc = createPeerConnection(from)
-        peersRef.current[from] = pc
+        if (!pc) {
+          pc = createPeerConnection(from)
+          peersRef.current[from] = pc
+        }
         await pc.setRemoteDescription(new RTCSessionDescription(signal))
         const answer = await pc.createAnswer()
         await pc.setLocalDescription(answer)
         socket.emit('signal', { to: from, signal: answer })
       } else if (signal.type === 'answer') {
-        await peersRef.current[from]?.setRemoteDescription(new RTCSessionDescription(signal))
+        await pc?.setRemoteDescription(new RTCSessionDescription(signal))
       } else if (signal.candidate) {
-        await peersRef.current[from]?.addIceCandidate(new RTCIceCandidate(signal))
+        await pc?.addIceCandidate(new RTCIceCandidate(signal))
       }
     })
 
@@ -78,13 +90,23 @@ export default function Room() {
   }, [roomId, isHost, createPeerConnection])
 
   const startStream = async () => {
-    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
-    if (videoRef.current) videoRef.current.srcObject = stream
-    streamRef.current = stream
-    setStreaming(true)
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
 
-    for (const pc of Object.values(peersRef.current)) {
-      stream.getTracks().forEach(track => pc.addTrack(track, stream))
+      if (videoRef.current) videoRef.current.srcObject = stream
+      streamRef.current = stream
+      setStreaming(true)
+
+      for (const pc of Object.values(peersRef.current)) {
+        stream.getTracks().forEach(track => pc.addTrack(track, stream))
+      }
+
+      stream.getVideoTracks()[0].onended = () => {
+        setStreaming(false)
+        streamRef.current = null
+      }
+    } catch (err) {
+      console.error('Erro ao capturar tela:', err)
     }
   }
 
@@ -97,7 +119,15 @@ export default function Room() {
         <button onClick={startStream}>Compartilhar tela</button>
       )}
 
-      <video ref={videoRef} autoPlay playsInline controls style={{ width: '100%', marginTop: 16 }} />
+      {isHost && streaming && (
+        <p>✅ Transmitindo...</p>
+      )}
+
+      <video ref={videoRef} 
+      autoPlay 
+      playsInline 
+      controls 
+      style={{ width: '100%', marginTop: 16 }} />
 
       <p>
         Link para convidar:{' '}

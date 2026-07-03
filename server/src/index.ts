@@ -44,9 +44,11 @@ io.on('connection', (socket) => {
     if (!rooms[roomId]) return socket.emit('error', 'Sala não encontrada')
     rooms[roomId].viewers.add(socket.id)
     socket.join(roomId)
-    socket.emit('viewer-joined', roomId)
     const hostId = rooms[roomId].hostId
-    if (hostId) socket.to(hostId).emit('new-viewer', socket.id)
+
+    if (hostId) {
+      io.to(hostId).emit('new-viewer', socket.id)
+    }
     console.log(`Viewer ${socket.id} entrou em ${roomId}`)
   })
 
