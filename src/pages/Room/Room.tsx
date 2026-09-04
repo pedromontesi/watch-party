@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
 import { io, Socket } from 'socket.io-client'
 
-import styles from './Room.module.css'
+import styles from './Room.module.scss'
 
 export default function Room() {
   const { roomId } = useParams<{ roomId: string }>()

@@ -1,0 +1,24 @@
+@use '../../styles/mixins' as *;
+
+.container {
+  @include page-container;
+}
+
+video {
+  width: 30% !important;
+  margin-top: 16px;
+  border-radius: 20px;
+}
+
+.codeInput {
+  @include code-input;
+}
+
+.joinButton {
+  @include btn-base;
+}
+
+.shareScreen {
+  @include btn-base;
+  @include btn-peel-fx;
+}

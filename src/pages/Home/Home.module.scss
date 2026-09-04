@@ -1,0 +1,26 @@
+@use '../../styles/mixins' as *;
+
+.container {
+  @include page-container;
+}
+
+img {
+  width: 140px;
+}
+
+p {
+  color: #7c7c7c;
+}
+
+.codeInput {
+  @include code-input;
+}
+
+.joinButton {
+  @include btn-base;
+}
+
+.buttonCreate {
+  @include btn-base;
+  @include btn-peel-fx;
+}
