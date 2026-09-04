@@ -6,7 +6,7 @@ export default function Home() {
   const navigate = useNavigate()
 
   const createRoom = async () => {
-    const res = await fetch('http://localhost:3001/create-room')
+    const res = await fetch('/create-room')
     const { roomId } = await res.json()
     navigate(`/${roomId}`, { state: { isHost: true } })
   }

@@ -1,5 +1,6 @@
 import express from 'express'
 import http from 'http'
+import path from 'path'
 import { Server } from 'socket.io'
 import cors from 'cors'
 
@@ -10,6 +11,10 @@ const server = http.createServer(app)
 const io = new Server(server, {
   cors: { origin: '*' }
 })
+
+// Pasta com o build do front-end (gerado por "vite build" na raiz do projeto)
+const frontendDist = path.join(__dirname, '../../dist')
+app.use(express.static(frontendDist))
 
 interface Room {
   hostId: string | null
@@ -69,4 +74,10 @@ io.on('connection', (socket) => {
   })
 })
 
-server.listen(3001, () => console.log('Servidor rodando em http://localhost:3001'))
+// Qualquer rota não-API cai no index.html (necessário para o React Router)
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(frontendDist, 'index.html'))
+})
+
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3001
+server.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`))

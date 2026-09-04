@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:all": "npm run build && npm install --prefix server && npm run build --prefix server",
+    "start": "node server/dist/index.js"
   },
   "dependencies": {
     "react": "^19.2.7",
