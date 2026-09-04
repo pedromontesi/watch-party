@@ -2,6 +2,8 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
 import { io, Socket } from 'socket.io-client'
 
+import styles from './Room.module.css'
+
 export default function Room() {
   const { roomId } = useParams<{ roomId: string }>()
   const location = useLocation()
@@ -111,16 +113,16 @@ export default function Room() {
   }
 
   return (
-    <div>
+    <div className={styles.container}>
       <h2>Sala: {roomId}</h2>
       <p>{isHost ? 'Você é o host' : 'Você é viewer'}</p>
 
       {isHost && !streaming && (
-        <button onClick={startStream}>Compartilhar tela</button>
+        <button className={styles.shareScreen} onClick={startStream}>Compartilhar tela</button>
       )}
 
       {isHost && streaming && (
-        <p>✅ Transmitindo...</p>
+        <p>Transmitindo </p>
       )}
 
       <video ref={videoRef} 

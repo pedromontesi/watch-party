@@ -1,3 +1,4 @@
+import styles from "./Home.module.css"
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -16,16 +17,18 @@ export default function Home() {
   }
 
   return (
-    <div>
+    <div className={styles.container}>
       <h1>Watch Party</h1>
-      <button onClick={createRoom}>Criar sala</button>
-      <hr />
+      <button className={styles.buttonCreate} onClick={createRoom}>Criar sala</button>
+      <p>OU</p>
+      <label htmlFor="code">Código da Sala</label>
       <input
-        value={code}
+      id="code"
         onChange={e => setCode(e.target.value)}
-        placeholder="Código da sala"
+        className={styles.codeInput}
+        placeholder="ex: kMprEW"
       />
-      <button onClick={joinRoom}>Entrar</button>
+      <button className={styles.joinButton} onClick={joinRoom}>Entrar</button>
     </div>
   )
 }
