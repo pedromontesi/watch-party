@@ -14,6 +14,10 @@ export default function Room() {
   const peersRef = useRef<Record<string, RTCPeerConnection>>({})
   const streamRef = useRef<MediaStream | null>(null)
   const [streaming, setStreaming] = useState(false)
+  const [needsSoundClick, setNeedsSoundClick] = useState(false)
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
+  const [audioDeviceId, setAudioDeviceId] = useState('') // '' = áudio da aba (getDisplayMedia)
+  const [audioWarning, setAudioWarning] = useState('')
 
   const createPeerConnection = useCallback((peerId: string): RTCPeerConnection => {
     const pc = new RTCPeerConnection({
@@ -27,11 +31,13 @@ export default function Room() {
     }
 
     pc.ontrack = (e) => {
-      if (videoRef.current) {
-        videoRef.current.srcObject = e.streams[0]
-      }
+      const video = videoRef.current
+      if (!video) return
+      video.srcObject = e.streams[0]
+      // Autoplay com som costuma ser bloqueado pelo navegador sem clique do usuário
+      video.play().catch(() => setNeedsSoundClick(true))
     }
-    
+
     pc.onnegotiationneeded = async () => {
       try {
         const offer = await pc.createOffer()
@@ -64,7 +70,6 @@ export default function Room() {
           pc.addTrack(track, streamRef.current!)
         )
       }
-
     })
 
     socket.on('signal', async ({ from, signal }: { from: string; signal: RTCSessionDescriptionInit & RTCIceCandidateInit }) => {
@@ -91,11 +96,57 @@ export default function Room() {
     return () => { socket.disconnect() }
   }, [roomId, isHost, createPeerConnection])
 
+  // Lista as fontes de áudio (no Linux, "Monitor of ..." = áudio do sistema)
+  const loadAudioDevices = async () => {
+    try {
+      // precisa de permissão uma vez para os nomes (labels) aparecerem
+      const tmp = await navigator.mediaDevices.getUserMedia({ audio: true })
+      tmp.getTracks().forEach(t => t.stop())
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      setAudioDevices(devices.filter(d => d.kind === 'audioinput'))
+    } catch (err) {
+      console.error('Erro ao listar dispositivos de áudio:', err)
+    }
+  }
+
   const startStream = async () => {
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+      setAudioWarning('')
 
-      if (videoRef.current) videoRef.current.srcObject = stream
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        }
+      })
+
+      // Se o usuário escolheu uma fonte "Monitor", captura o áudio dela
+      if (audioDeviceId) {
+        const sysAudio = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            deviceId: { exact: audioDeviceId },
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          }
+        })
+        stream.getAudioTracks().forEach(t => { stream.removeTrack(t); t.stop() })
+        sysAudio.getAudioTracks().forEach(t => stream.addTrack(t))
+      }
+
+      if (stream.getAudioTracks().length === 0) {
+        setAudioWarning(
+          'Nenhum áudio capturado. No Linux, o Chrome só captura áudio ao compartilhar uma ABA ' +
+          '(marque "Compartilhar áudio da guia"). Para tela/janela, escolha uma fonte "Monitor" abaixo.'
+        )
+      }
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        videoRef.current.muted = true // evita eco/feedback no host
+      }
       streamRef.current = stream
       setStreaming(true)
 
@@ -104,6 +155,7 @@ export default function Room() {
       }
 
       stream.getVideoTracks()[0].onended = () => {
+        stream.getTracks().forEach(t => t.stop())
         setStreaming(false)
         streamRef.current = null
       }
@@ -112,24 +164,51 @@ export default function Room() {
     }
   }
 
+  const enableSound = () => {
+    const video = videoRef.current
+    if (!video) return
+    video.muted = false
+    video.play().then(() => setNeedsSoundClick(false)).catch(console.error)
+  }
+
   return (
     <div className={styles.container}>
       <h2>Sala: {roomId}</h2>
       <p>{isHost ? 'Você é o host' : 'Você é viewer'}</p>
 
       {isHost && !streaming && (
-        <button className={styles.shareScreen} onClick={startStream}>Compartilhar tela</button>
+        <>
+          <div style={{ marginBottom: 8 }}>
+            <button onClick={loadAudioDevices}>Listar fontes de áudio</button>{' '}
+            <select value={audioDeviceId} onChange={e => setAudioDeviceId(e.target.value)}>
+              <option value="">Áudio da aba (padrão)</option>
+              {audioDevices.map(d => (
+                <option key={d.deviceId} value={d.deviceId}>{d.label || d.deviceId}</option>
+              ))}
+            </select>
+          </div>
+          <button className={styles.shareScreen} onClick={startStream}>Compartilhar tela</button>
+        </>
       )}
 
       {isHost && streaming && (
-        <p>Transmitindo </p>
+        <p>Transmitindo</p>
       )}
 
-      <video ref={videoRef} 
-      autoPlay 
-      playsInline 
-      controls 
-      style={{ width: '100%', marginTop: 16 }} />
+      {audioWarning && <p style={{ color: 'orange' }}>{audioWarning}</p>}
+
+      {!isHost && needsSoundClick && (
+        <button onClick={enableSound}>Ativar som / iniciar vídeo</button>
+      )}
+
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        controls
+        muted={isHost}
+        style={{ width: '100%', marginTop: 16 }}
+      />
 
       <p>
         Link para convidar:{' '}
